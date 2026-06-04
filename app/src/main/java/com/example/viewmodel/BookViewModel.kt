@@ -4,8 +4,6 @@ import android.app.Application
 import android.content.Context
 import android.os.Bundle
 import android.media.AudioAttributes
-import android.media.AudioManager
-import android.media.ToneGenerator
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
@@ -74,6 +72,13 @@ class BookViewModel(application: Application) : AndroidViewModel(application), T
 
     private val sharedPrefs = application.getSharedPreferences("lectura_antigua_prefs", Context.MODE_PRIVATE)
 
+    // App Settings State (Theme Mode and Reader Language)
+    private val _themeMode = MutableStateFlow(sharedPrefs.getString("theme_mode_pref", "SISTEMA") ?: "SISTEMA")
+    val themeMode: StateFlow<String> = _themeMode.asStateFlow()
+
+    private val _language = MutableStateFlow(sharedPrefs.getString("language_pref", "ES") ?: "ES")
+    val language: StateFlow<String> = _language.asStateFlow()
+
     // Books Library
     val books: List<Book> = BookRepository.books
 
@@ -98,15 +103,55 @@ class BookViewModel(application: Application) : AndroidViewModel(application), T
         loadSavedProgressData()
     }
 
+    fun setThemeMode(mode: String) {
+        sharedPrefs.edit().putString("theme_mode_pref", mode).apply()
+        _themeMode.value = mode
+    }
+
+    fun setLanguage(lang: String) {
+        sharedPrefs.edit().putString("language_pref", lang).apply()
+        _language.value = lang
+        applyTtsLanguage(lang)
+    }
+
+    private fun applyTtsLanguage(lang: String) {
+        val locale = when (lang) {
+            "EN" -> Locale.US
+            "FR" -> Locale.FRANCE
+            "PT" -> Locale("pt", "BR")
+            else -> Locale("es", "ES")
+        }
+        try {
+            val result = tts?.setLanguage(locale)
+            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                tts?.setLanguage(Locale.getDefault())
+                Log.e("BookViewModel", "Language $lang not fully supported in offline TTS; fallback applied.")
+            } else {
+                Log.d("BookViewModel", "TTS Language successfully changed to $lang")
+            }
+        } catch (e: Exception) {
+            Log.e("BookViewModel", "TTS language setting error: ${e.message}")
+        }
+    }
+
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            val spainLocale = Locale("es", "ES")
-            val defaultSpanish = Locale("es")
+            val currentLang = _language.value
+            val locale = when (currentLang) {
+                "EN" -> Locale.US
+                "FR" -> Locale.FRANCE
+                "PT" -> Locale("pt", "BR")
+                else -> Locale("es", "ES")
+            }
             
-            // Check if Spanish is available, otherwise default to context Spanish
-            var result = tts?.setLanguage(spainLocale)
+            var result = tts?.setLanguage(locale)
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                result = tts?.setLanguage(defaultSpanish)
+                val spainLocale = Locale("es", "ES")
+                val defaultSpanish = Locale("es")
+                result = tts?.setLanguage(spainLocale)
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    result = tts?.setLanguage(defaultSpanish)
+                }
             }
 
             // Route audio attributes explicitly to USAGE_MEDIA so that volume is controlled by the Media slider (Music/Games)
@@ -121,21 +166,19 @@ class BookViewModel(application: Application) : AndroidViewModel(application), T
             }
 
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                // Warm fallback to system default so speech can still execute
                 val systemLocale = Locale.getDefault()
                 tts?.setLanguage(systemLocale)
-                Log.e("BookViewModel", "Spanish TTS Language is not available offline. Falling back to system default locale.")
                 _audioState.update { 
                     it.copy(
                         isTtsReady = true, 
-                        errorMsg = "Idioma español no detectado de forma nativa en tu dispositivo. Usando voz predeterminada del sistema. ¡Asegúrate de subir el volumen de multimedia!"
+                        errorMsg = "Idioma hispano no detectado offline. Usando voz del dispositivo."
                     ) 
                 }
             } else {
                 _audioState.update { 
                     it.copy(
                         isTtsReady = true, 
-                        errorMsg = "Lector de voz listo. Recuerda subir el volumen de multimedia (música/juegos)."
+                        errorMsg = null
                     ) 
                 }
             }
@@ -351,16 +394,6 @@ class BookViewModel(application: Application) : AndroidViewModel(application), T
         saveReadingProgress(book.id, _audioState.value.currentChapterIdx, _audioState.value.currentParagraphIdx)
         if (_audioState.value.isPlaying) {
             speakCurrentParagraph()
-        }
-    }
-
-    fun playTestTone() {
-        try {
-            val toneGenerator = ToneGenerator(AudioManager.STREAM_MUSIC, 100)
-            toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP, 250)
-            Log.d("BookViewModel", "Tono de prueba reproducido correctamente")
-        } catch (e: Exception) {
-            Log.e("BookViewModel", "No se pudo reproducir el tono de prueba: ${e.message}")
         }
     }
 

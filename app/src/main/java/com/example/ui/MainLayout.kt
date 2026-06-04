@@ -42,6 +42,7 @@ import com.example.viewmodel.BookViewModel
 import com.example.viewmodel.ReadingTheme
 import com.example.viewmodel.BookProgress
 import com.example.viewmodel.AudioState
+import com.example.viewmodel.Translator
 import kotlinx.coroutines.launch
 import kotlin.math.sin
 
@@ -98,172 +99,430 @@ fun LibraryLandingScreen(
 ) {
     val progressMap by viewModel.progressMap.collectAsState()
     val audioState by viewModel.audioState.collectAsState()
+    val currentLang by viewModel.language.collectAsState()
+    val themeMode by viewModel.themeMode.collectAsState()
+    
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val coroutineScope = rememberCoroutineScope()
+    
+    // Live Clock / Time and Date
+    var currentDateTimeString by remember { mutableStateOf("") }
+    LaunchedEffect(Unit) {
+        while (true) {
+            val now = java.util.Calendar.getInstance().time
+            val sdf = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss", java.util.Locale.getDefault())
+            currentDateTimeString = sdf.format(now)
+            kotlinx.coroutines.delay(1000)
+        }
+    }
     
     var selectedTab by remember { mutableStateOf(0) } // 0: Libros, 1: Audiolibros, 2: Favoritos
-    val tabs = listOf("Leer Libros", "Audiolibros", "Mis Favoritos")
+    val tabs = listOf(
+        Translator.translate("menu_library", currentLang),
+        Translator.translate("menu_audiobooks", currentLang),
+        Translator.translate("menu_favorites", currentLang)
+    )
     
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(
-                                    brush = Brush.radialGradient(
-                                        colors = listOf(Color(0xFFEAB308), Color(0xFFD97706))
-                                    ),
-                                    shape = RoundedCornerShape(10.dp)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.MenuBook,
-                                contentDescription = "Logo",
-                                tint = Color.White
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(
+                modifier = Modifier.width(320.dp),
+                drawerContainerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
+            ) {
+                // Header block with elegant gradient styling
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primaryContainer,
+                                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                )
                             )
-                        }
+                        )
+                        .padding(24.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.primary,
+                                shape = RoundedCornerShape(12.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MenuBook,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = Translator.translate("drawer_header_greeting", currentLang),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Text(
+                        text = Translator.translate("drawer_config_desc", currentLang),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Date & Time Live display Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = "Calendario",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
                         Column {
                             Text(
-                                text = "Bibliopolis",
+                                text = Translator.translate("date_time_label", currentLang),
+                                style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 19.sp,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.primary
                             )
+                            Spacer(modifier = Modifier.height(2.dp))
                             Text(
-                                text = "Lectura & Audio Offline",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = currentDateTimeString,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         }
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
-                )
-            )
-        },
-        bottomBar = {
-            // Underlay mini-player bar if an audiobook is active and playing in background
-            Column {
-                if (audioState.activeBook != null) {
-                    MiniPlayerBar(
-                        audioState = audioState,
-                        onPlayPause = {
-                            if (audioState.isPlaying) viewModel.pauseAudiobook() else viewModel.playAudiobook()
-                        },
-                        onOpenFullPlayer = {
-                            onOpenPlayer(audioState.activeBook!!.id)
-                        }
-                    )
                 }
-                
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
+
+                Divider(
+                    modifier = Modifier.padding(vertical = 12.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    tabs.forEachIndexed { index, label ->
-                        val icon = when (index) {
-                            0 -> Icons.Outlined.MenuBook
-                            1 -> Icons.Outlined.Hearing
-                            else -> Icons.Default.Favorite
-                        }
-                        NavigationBarItem(
-                            selected = selectedTab == index,
-                            onClick = { selectedTab = index },
-                            label = { Text(label, fontSize = 12.sp) },
-                            icon = { Icon(icon, contentDescription = label) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Color.White,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                indicatorColor = MaterialTheme.colorScheme.primary
-                            )
+                    // Title for Theme Setting
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = Translator.translate("theme_label", currentLang).uppercase(),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
                         )
+                        
+                        // Theme Switch Row Options
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            listOf(
+                                Triple("SISTEMA", Translator.translate("theme_system", currentLang), Icons.Default.Settings),
+                                Triple("CLARO", Translator.translate("theme_light", currentLang), Icons.Default.LightMode),
+                                Triple("OSCURO", Translator.translate("theme_dark", currentLang), Icons.Default.DarkMode)
+                            ).forEach { (modeCode, titleStr, iconVec) ->
+                                val active = themeMode == modeCode
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { viewModel.setThemeMode(modeCode) }
+                                        .testTag("theme_btn_$modeCode"),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (active) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+                                    ),
+                                    border = BorderStroke(
+                                        width = 1.dp,
+                                        color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = iconVec,
+                                            contentDescription = null,
+                                            tint = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            text = titleStr,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (active) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        RadioButton(
+                                            selected = active,
+                                            onClick = { viewModel.setThemeMode(modeCode) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Title for Language Setting
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = Translator.translate("lang_label", currentLang).uppercase(),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        
+                        // Languages Column List
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            listOf(
+                                Triple("ES", "Español", "🇪🇸"),
+                                Triple("EN", "English", "🇺🇸"),
+                                Triple("FR", "Français", "🇫🇷"),
+                                Triple("PT", "Português", "🇧🇷")
+                            ).forEach { (langCode, langName, flagChar) ->
+                                val active = currentLang == langCode
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { viewModel.setLanguage(langCode) }
+                                        .testTag("lang_btn_$langCode"),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (active) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+                                    ),
+                                    border = BorderStroke(
+                                        width = 1.dp,
+                                        color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Text(
+                                            text = flagChar,
+                                            style = MaterialTheme.typography.titleMedium
+                                        )
+                                        Text(
+                                            text = langName,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (active) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        RadioButton(
+                                            selected = active,
+                                            onClick = { viewModel.setLanguage(langCode) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surface,
-                            MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
-                        )
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    navigationIcon = {
+                        IconButton(
+                            onClick = {
+                                coroutineScope.launch { drawerState.open() }
+                            },
+                            modifier = Modifier.testTag("hamburger_menu_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Menú hamburguesa",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    },
+                    title = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .background(
+                                        brush = Brush.radialGradient(
+                                            colors = listOf(Color(0xFFEAB308), Color(0xFFD97706))
+                                        ),
+                                        shape = RoundedCornerShape(8.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MenuBook,
+                                    contentDescription = "Logo",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = Translator.translate("app_title", currentLang),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = Translator.translate("app_subtitle", currentLang),
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
                     )
                 )
-        ) {
-            // Curated literary quote banner at top
-            LiteraryQuoteBanner()
-
-            val filteredBooks = when (selectedTab) {
-                0 -> viewModel.books // Display all books to read
-                1 -> viewModel.books // Display books available for audiobook
-                else -> viewModel.books.filter { progressMap[it.id]?.isFavorite == true } // Favorites
-            }
-
-            if (filteredBooks.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.padding(24.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (selectedTab == 2) Icons.Default.Favorite else Icons.Default.MenuBook,
-                            contentDescription = "Sin libros",
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-                            modifier = Modifier.size(72.dp)
-                        )
-                        Text(
-                            text = if (selectedTab == 2) "Aún no tienes favoritos" else "No hay libros disponibles",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = if (selectedTab == 2) "Presiona el corazón de cualquier libro clásico para agregarlo a tu estantería personal." 
-                                   else "La biblioteca se está cargando...",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                            textAlign = TextAlign.Center
+            },
+            bottomBar = {
+                // Underlay mini-player bar if an audiobook is active and playing in background
+                Column {
+                    if (audioState.activeBook != null) {
+                        MiniPlayerBar(
+                            audioState = audioState,
+                            onPlayPause = {
+                                if (audioState.isPlaying) viewModel.pauseAudiobook() else viewModel.playAudiobook()
+                            },
+                            onOpenFullPlayer = {
+                                onOpenPlayer(audioState.activeBook!!.id)
+                            }
                         )
                     }
+                    
+                    NavigationBar(
+                        containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
+                    ) {
+                        tabs.forEachIndexed { index, label ->
+                            val icon = when (index) {
+                                0 -> Icons.Outlined.MenuBook
+                                1 -> Icons.Outlined.Hearing
+                                else -> Icons.Default.Favorite
+                            }
+                            NavigationBarItem(
+                                selected = selectedTab == index,
+                                onClick = { selectedTab = index },
+                                label = { Text(label, fontSize = 11.sp) },
+                                icon = { Icon(icon, contentDescription = label) },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = Color.White,
+                                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                                    indicatorColor = MaterialTheme.colorScheme.primary
+                                )
+                            )
+                        }
+                    }
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f)
-                        .testTag("book_list"),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    itemsIndexed(filteredBooks) { _, book ->
-                        val prog = progressMap[book.id] ?: BookProgress(bookId = book.id)
-                        BookCatalogCard(
-                            book = book,
-                            progress = prog,
-                            isAudioTab = selectedTab == 1,
-                            onReadClick = { onOpenReader(book.id) },
-                            onListenClick = { 
-                                viewModel.selectAudiobook(book)
-                                onOpenPlayer(book.id)
-                            },
-                            onToggleFav = { viewModel.toggleFavorite(book.id) }
+            }
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                MaterialTheme.colorScheme.surface,
+                                MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
+                            )
                         )
+                    )
+            ) {
+                // Curated literary quote banner at top
+                LiteraryQuoteBanner()
+
+                val filteredBooks = when (selectedTab) {
+                    0 -> viewModel.books // Display all books to read
+                    1 -> viewModel.books // Display books available for audiobook
+                    else -> viewModel.books.filter { progressMap[it.id]?.isFavorite == true } // Favorites
+                }
+
+                if (filteredBooks.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.padding(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (selectedTab == 2) Icons.Default.Favorite else Icons.Default.MenuBook,
+                                contentDescription = "Sin libros",
+                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                                modifier = Modifier.size(72.dp)
+                            )
+                            Text(
+                                text = if (selectedTab == 2) 
+                                    Translator.translate("no_favorites", currentLang) 
+                                    else Translator.translate("empty_search", currentLang),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .weight(1f)
+                            .testTag("book_list"),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        itemsIndexed(filteredBooks) { _, book ->
+                            val prog = progressMap[book.id] ?: BookProgress(bookId = book.id)
+                            BookCatalogCard(
+                                book = book,
+                                progress = prog,
+                                isAudioTab = selectedTab == 1,
+                                onReadClick = { onOpenReader(book.id) },
+                                onListenClick = { 
+                                    viewModel.selectAudiobook(book)
+                                    onOpenPlayer(book.id)
+                                },
+                                onToggleFav = { viewModel.toggleFavorite(book.id) }
+                            )
+                        }
                     }
                 }
             }
@@ -1025,6 +1284,7 @@ fun AudiobookPlayerScreen(
     val book = viewModel.books.first { it.id == bookId }
     val audioState by viewModel.audioState.collectAsState()
     val progressMap by viewModel.progressMap.collectAsState()
+    val currentLang by viewModel.language.collectAsState()
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
@@ -1053,7 +1313,7 @@ fun AudiobookPlayerScreen(
             TopAppBar(
                 title = {
                     Text(
-                        "Reproductor de Voz",
+                        text = Translator.translate("menu_audiobooks", currentLang),
                         fontWeight = FontWeight.Bold,
                         fontSize = 17.sp
                     )
@@ -1062,7 +1322,7 @@ fun AudiobookPlayerScreen(
                     IconButton(onClick = onBack, modifier = Modifier.testTag("player_back_btn")) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver"
+                            contentDescription = Translator.translate("back_btn", currentLang)
                         )
                     }
                 },
@@ -1220,67 +1480,6 @@ fun AudiobookPlayerScreen(
                 }
             }
 
-            // Friendly Volume Reminder Banner
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.VolumeUp,
-                            contentDescription = "Volumen",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = "¿No se escucha ningún sonido?",
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    Text(
-                        text = "1. Si usas el Emulador Web, asegúrate de activar el sonido de la pestaña y de tu computadora.\n" +
-                               "2. Si la voz sigue sin sonar, la síntesis requiere soporte de idioma español en tu sistema. Haz clic abajo para probar si tu bocina o canal de audio funciona:",
-                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f),
-                        fontSize = 11.sp,
-                        lineHeight = 15.sp
-                    )
-                    Button(
-                        onClick = { viewModel.playTestTone() },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = Color.White
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(36.dp)
-                            .testTag("test_sound_button"),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.VolumeUp,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Hacer Sonar Pitido de Prueba", fontSize = 11.sp)
-                    }
-                }
-            }
-
             // Playback rate adjusting bar (0.5x, 1.0x, 1.5x, 2.0x)
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -1288,7 +1487,7 @@ fun AudiobookPlayerScreen(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
-                    text = "Velocidad de narración",
+                    text = Translator.translate("playback_speed", currentLang),
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant

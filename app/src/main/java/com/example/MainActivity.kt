@@ -12,6 +12,10 @@ import com.example.ui.BookLibraryApp
 import com.example.ui.theme.MyApplicationTheme
 import com.example.viewmodel.BookViewModel
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.foundation.isSystemInDarkTheme
+
 class MainActivity : ComponentActivity() {
   private val viewModel: BookViewModel by viewModels()
 
@@ -19,7 +23,13 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     setContent {
-      MyApplicationTheme {
+      val themeMode by viewModel.themeMode.collectAsState()
+      val useDarkTheme = when (themeMode) {
+        "CLARO" -> false
+        "OSCURO" -> true
+        else -> isSystemInDarkTheme()
+      }
+      MyApplicationTheme(darkTheme = useDarkTheme) {
         Surface(modifier = Modifier.fillMaxSize()) {
           BookLibraryApp(viewModel = viewModel)
         }
