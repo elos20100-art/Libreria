@@ -1,0 +1,6 @@
+{
+  "name": "Libros y Audiolibros",
+  "description": "Una hermosa biblioteca sin internet para leer y escuchar los mejores libros clásicos con reproductor de audiolibros integrado.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
