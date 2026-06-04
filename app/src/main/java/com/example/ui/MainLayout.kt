@@ -105,12 +105,15 @@ fun LibraryLandingScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
     
+    val use24Hour by viewModel.use24Hour.collectAsState()
+    
     // Live Clock / Time and Date
     var currentDateTimeString by remember { mutableStateOf("") }
-    LaunchedEffect(Unit) {
+    LaunchedEffect(use24Hour) {
         while (true) {
             val now = java.util.Calendar.getInstance().time
-            val sdf = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm:ss", java.util.Locale.getDefault())
+            val pattern = if (use24Hour) "dd/MM/yyyy HH:mm:ss" else "dd/MM/yyyy hh:mm:ss a"
+            val sdf = java.text.SimpleDateFormat(pattern, java.util.Locale.getDefault())
             currentDateTimeString = sdf.format(now)
             kotlinx.coroutines.delay(1000)
         }
@@ -340,6 +343,64 @@ fun LibraryLandingScreen(
                                         RadioButton(
                                             selected = active,
                                             onClick = { viewModel.setLanguage(langCode) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Title for Time Format Setting
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(
+                            text = Translator.translate("time_format_label", currentLang).uppercase(),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            listOf(
+                                Pair(false, Translator.translate("format_12h", currentLang)),
+                                Pair(true, Translator.translate("format_24h", currentLang))
+                            ).forEach { (is24h, labelText) ->
+                                val active = use24Hour == is24h
+                                Card(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { viewModel.setUse24Hour(is24h) }
+                                        .testTag("time_format_btn_${if (is24h) "24" else "12"}"),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (active) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
+                                    ),
+                                    border = BorderStroke(
+                                        width = 1.dp,
+                                        color = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                                    )
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (is24h) Icons.Default.Schedule else Icons.Default.AccessTime,
+                                            contentDescription = null,
+                                            tint = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            text = labelText,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
+                                            color = if (active) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        RadioButton(
+                                            selected = active,
+                                            onClick = { viewModel.setUse24Hour(is24h) }
                                         )
                                     }
                                 }
@@ -937,7 +998,8 @@ fun BookReaderScreen(
     viewModel: BookViewModel,
     onBack: () -> Unit
 ) {
-    val book = viewModel.books.first { it.id == bookId }
+    val currentLang by viewModel.language.collectAsState()
+    val book = remember(currentLang) { viewModel.books.first { it.id == bookId } }
     val progressMap by viewModel.progressMap.collectAsState()
     val settings by viewModel.settings.collectAsState()
     
@@ -1281,10 +1343,10 @@ fun AudiobookPlayerScreen(
     viewModel: BookViewModel,
     onBack: () -> Unit
 ) {
-    val book = viewModel.books.first { it.id == bookId }
     val audioState by viewModel.audioState.collectAsState()
     val progressMap by viewModel.progressMap.collectAsState()
     val currentLang by viewModel.language.collectAsState()
+    val book = remember(currentLang) { viewModel.books.first { it.id == bookId } }
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 

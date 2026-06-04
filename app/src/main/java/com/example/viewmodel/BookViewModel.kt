@@ -79,8 +79,12 @@ class BookViewModel(application: Application) : AndroidViewModel(application), T
     private val _language = MutableStateFlow(sharedPrefs.getString("language_pref", "ES") ?: "ES")
     val language: StateFlow<String> = _language.asStateFlow()
 
+    private val _use24Hour = MutableStateFlow(sharedPrefs.getBoolean("use_24h_pref", true))
+    val use24Hour: StateFlow<Boolean> = _use24Hour.asStateFlow()
+
     // Books Library
-    val books: List<Book> = BookRepository.books
+    val books: List<Book>
+        get() = BookRepository.getBooksForLanguage(_language.value)
 
     // Reading Settings State
     private val _settings = MutableStateFlow(ReadingSettings())
@@ -112,6 +116,20 @@ class BookViewModel(application: Application) : AndroidViewModel(application), T
         sharedPrefs.edit().putString("language_pref", lang).apply()
         _language.value = lang
         applyTtsLanguage(lang)
+        
+        // Dynamic re-sync active audiobook if matching id
+        val activeBookId = _audioState.value.activeBook?.id
+        if (activeBookId != null) {
+            val updatedBook = BookRepository.getBooksForLanguage(lang).firstOrNull { it.id == activeBookId }
+            if (updatedBook != null) {
+                _audioState.update { it.copy(activeBook = updatedBook) }
+            }
+        }
+    }
+
+    fun setUse24Hour(value: Boolean) {
+        sharedPrefs.edit().putBoolean("use_24h_pref", value).apply()
+        _use24Hour.value = value
     }
 
     private fun applyTtsLanguage(lang: String) {

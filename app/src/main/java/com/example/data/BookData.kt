@@ -195,4 +195,271 @@ object BookRepository {
             )
         )
     )
+
+    fun getBooksForLanguage(lang: String): List<Book> {
+        if (lang == "ES") return books
+        return books.map { book ->
+            when (lang) {
+                "EN" -> translateToEnglish(book)
+                "FR" -> translateToFrench(book)
+                "PT" -> translateToPortuguese(book)
+                else -> book
+            }
+        }
+    }
+
+    private fun translateToEnglish(book: Book): Book {
+        return when (book.id) {
+            "el_principito" -> book.copy(
+                title = "The Little Prince",
+                category = "Philosophical Fantasy",
+                synopsis = "A pilot lost in the Sahara Desert meets a small prince from another planet. They talk about love, friendship, and the adult world.",
+                chapters = listOf(
+                    Chapter(1, "Chapter I: Encounter in the Desert", listOf(
+                        "I lived my life alone, without anyone to talk to, until I had an accident with my plane in the Sahara Desert six years ago. Something was broken in my engine.",
+                        "The first night I went to sleep on the sand, a thousand miles from any inhabited land. Imagine my surprise when a strange voice woke me saying: 'Please... draw me a sheep!'"
+                    )),
+                    Chapter(2, "Chapter II: The Mysterious Flower", listOf(
+                        "I soon learned to know this flower better on the prince's planet. It was very simple, with a single row of petals, taking up no space and disturbing no one.",
+                        "But this flower had germinated from a seed brought from who knows where, and the prince watched it closely. It began to slow down its growth and prepare to blossom."
+                    )),
+                    Chapter(3, "Chapter III: The Secret of Life", listOf(
+                        "It was then that the fox appeared under the apple tree. 'Good morning,' said the fox gravely. 'Who are you?' asked the prince.",
+                        "And then he added his great secret: 'Here is my secret. It is very simple: It is only with the heart that one can see rightly; what is essential is invisible to the eye.'"
+                    ))
+                )
+            )
+            "don_quijote" -> book.copy(
+                title = "Don Quixote",
+                category = "Classic Literature",
+                synopsis = "Alonso Quijano reads too many books of chivalry, loses his mind, and decides to become a knight-errant named Don Quixote.",
+                chapters = listOf(
+                    Chapter(1, "Chapter I: The Famous Gentleman", listOf(
+                        "In a village of La Mancha, there lived a gentleman who kept a lance, an old shield, a lean horse, and a hunting dog.",
+                        "This gentleman spent his idle time reading books of chivalry with such pleasure that he almost forgot about hunting or managing his estate."
+                    )),
+                    Chapter(2, "Chapter II: The Adventure of the Windmills", listOf(
+                        "At this point they came in sight of thirty or forty windmills. Don Quixote said to Sancho Panza: 'Look there, friend Sancho, thirty monstrous giants!'",
+                        "'What giants?' asked Sancho with wide eyes. 'Those are windmills, and their arms are sails moved by the wind!'"
+                    ))
+                )
+            )
+            "la_metamorfosis" -> book.copy(
+                title = "The Metamorphosis",
+                category = "Existentialism",
+                synopsis = "Gregor Samsa wakes up to find himself transformed into a giant insect, leading to tragedy for his family.",
+                chapters = listOf(
+                    Chapter(1, "Chapter I: The Awakening", listOf(
+                        "One morning, when Gregor Samsa woke from troubled dreams, he found himself transformed in his bed into a monstrous insect.",
+                        "His room, a proper human room although a little small, lay peacefully between its four familiar walls. 'What has happened to me?' he thought."
+                    )),
+                    Chapter(2, "Chapter II: The Family's Reaction", listOf(
+                        "The door remained closed until late. Gregor understood from the whispers that his family did not want to leave him alone, but was afraid to enter.",
+                        "His sister Grete entered cautiously bringing sweet milk with bread. Gregor soon discovered he preferred rotten vegetables over fresh human food."
+                    ))
+                )
+            )
+            "dracula" -> book.copy(
+                title = "Dracula",
+                category = "Gothic Horror",
+                synopsis = "Jonathan Harker travels to Transylvania to meet Count Dracula, only to find himself trapped in a gothic horror.",
+                chapters = listOf(
+                    Chapter(1, "Chapter I: Journey to Transylvania", listOf(
+                        "My journey began in Munich, and I arrived to the Borgo Pass at sunset. The mountains rose like hooded giants watching the road.",
+                        "A black carriage appeared from the shadows. The coachman, covered in a big black cloak, gestured silently for me to climb up. His eyes burned like coals."
+                    )),
+                    Chapter(2, "Chapter II: Meeting the Count", listOf(
+                        "The carriage stopped at a vast ruined castle. A tall old man in black, with a long white moustache, held a silver candlestick.",
+                        "'Welcome to my house,' he said in a deep voice. 'Enter freely, Mr. Harker.' His hands were extremely cold, and his eyes had a red gleam."
+                    ))
+                )
+            )
+            "alicia_maravillas" -> book.copy(
+                title = "Alice in Wonderland",
+                category = "Absurd Fantasy",
+                synopsis = "Alice follows a white rabbit down a rabbit hole into a bizarre and nonsense world.",
+                chapters = listOf(
+                    Chapter(1, "Chapter I: Down the Rabbit Hole", listOf(
+                        "Alice was getting tired of sitting by her sister on the river bank, with nothing to do, when a White Rabbit with pink eyes ran past her.",
+                        "The Rabbit took a watch out of its waistcoat pocket, and Alice ran after it, jumping down a large rabbit hole under the hedge without thinking."
+                    )),
+                    Chapter(2, "Chapter II: A Mad Tea-Party", listOf(
+                        "There was a table set under a tree, where the March Hare and the Hatter were having tea. A Dormouse sat asleep between them.",
+                        "'No room! No room!' they cried out as Alice approached. 'There's plenty of room!' said Alice indignantly, sitting down."
+                    ))
+                )
+            )
+            else -> book
+        }
+    }
+
+    private fun translateToFrench(book: Book): Book {
+        return when (book.id) {
+            "el_principito" -> book.copy(
+                title = "Le Petit Prince",
+                category = "Fantaisie Philosophique",
+                synopsis = "Un pilote perdu dans le désert du Sahara rencontre un petit prince venu d'une autre planète. Ils parlent de l'amour, de l'amitié et du monde.",
+                chapters = listOf(
+                    Chapter(1, "Chapitre I: Rencontre dans le Désert", listOf(
+                        "J'ai ainsi vécu seul, sans personne avec qui parler, jusqu'à une panne dans le désert du Sahara, il y a six ans. Quelque chose s'était cassé dans mon moteur.",
+                        "Le premier soir, je me suis endormi sur le sable à mille milles de toute terre habitée. Étonné lorsque, au lever du jour, une voix m'a réveillé : 'S'il vous plaît... dessine-moi un mouton !'"
+                    )),
+                    Chapter(2, "Chapitre II: La Fleur Mystérieuse", listOf(
+                        "J'appris vite à connaître cette fleur sur la planète. Il y avait toujours eu des fleurs très simples, ornées d'un seul rang de pétales.",
+                        "Mais celle-là avait germé d'une graine apportée d'on ne sait où, et le petit prince avait surveillé de près cette brindille."
+                    )),
+                    Chapter(3, "Chapitre III: Le Secret de la Vie", listOf(
+                        "C'est alors qu'apparut le renard. 'Bonjour', dit le renard sous le pommier. 'Qui es-tu ?' d'emanda le petit prince.",
+                        "Et puis il ajouta son grand secret: 'Voici mon secret. Il est très simple: on ne voit bien qu'avec le cœur. L'essentiel est invisible pour les yeux.'"
+                    ))
+                )
+            )
+            "don_quijote" -> book.copy(
+                title = "Don Quichotte",
+                category = "Littérature Classique",
+                synopsis = "Alonso Quijano perd la raison à force de lire des livres de chevalerie et décide de devenir le chevalier errant Don Quichotte.",
+                chapters = listOf(
+                    Chapter(1, "Chapitre I: Le Fameux Hidalgo", listOf(
+                        "Dans un village de la Manche vivait un hidalgo qui avait une lance, un vieux bouclier, un cheval maigre et un chien de chasse.",
+                        "Cet hidalgo passait son temps libre à lire des livres de chevalerie avec tant de passion qu'il en oublia de gérer ses biens."
+                    )),
+                    Chapter(2, "Chapitre II: L'Aventure des Moulins à Vent", listOf(
+                        "Sur ces entrefaites, ils découvrirent trente ou quarante moulins à vent. Don Quichotte dit à Sancho : 'Regarde là, trente géants démesurés !'",
+                        "« Quels géants ? », demanda Sancho. « Ce sont des moulins, et ce qui semble être des bras sont les ailes tournées par le vent ! »"
+                    ))
+                )
+            )
+            "la_metamorfosis" -> book.copy(
+                title = "La Métamorphose",
+                category = "Existentialisme",
+                synopsis = "Grégoire Samsa se réveille transformé en un monstrueux insecte géant, provoquant un drame familial.",
+                chapters = listOf(
+                    Chapter(1, "Chapitre I: Le Réveil", listOf(
+                        "Un matin, Grégoire Samsa s'éveilla transformé dans son lit en une véritable vermine.",
+                        "Sa chambre, une vraie chambre humaine, bien qu'un peu petite, était paisible entre ses quatre murs. « Qu'est-ce qui m'est arrivé ? », pensa-t-il."
+                    )),
+                    Chapter(2, "Chapitre II: La Réaction Familiale", listOf(
+                        "La porte ne s'ouvrit que très tard. Grégoire comprit que sa famille ne voulait pas le laisser seul, mais avait peur d'entrer.",
+                        "Sa sœur Grete entra en apportant du lait frais et du pain. Grégoire découvrit bientôt qu'il préférait les légumes pourris à la nourriture humaine."
+                    ))
+                )
+            )
+            "dracula" -> book.copy(
+                title = "Dracula",
+                category = "Horreur Gothique",
+                synopsis = "Jonathan Harker voyage en Transylvanie pour rencontrer le mystérieux Comte Dracula et se retrouve piégé dans son château.",
+                chapters = listOf(
+                    Chapter(1, "Chapitre I: Le Voyage en Transylvanie", listOf(
+                        "Mon voyage commença à Munich et j'arrivai au col de Borgo au coucher du soleil. Les montagnes s'élevaient comme des géants encapuchonnés.",
+                        "Une calèche noire parut de la forêt. Le cocher enveloppé d'un manteau noir me fit signe de monter. Ses yeux brillaient comme des braises."
+                    )),
+                    Chapter(2, "Chapitre II: Rencontre avec le Comte", listOf(
+                        "La calèche s'arrêta dans un grand château en ruine. Un vieillard vêtu de noir, tenant un chandelier d'argent, s'avança.",
+                        "« Bienvenue chez moi ! », dit-il d'une voix grave. « Entrez librement, Monsieur Harker. » Ses mains étaient glaciales."
+                    ))
+                )
+            )
+            "alicia_maravillas" -> book.copy(
+                title = "Alice au Pays des Merveilles",
+                category = "Fantaisie Absurde",
+                synopsis = "Alice poursuit un Lapin Blanc et plonge dans l'univers loufoque et fantastique du Pays des Merveilles.",
+                chapters = listOf(
+                    Chapter(1, "Chapitre I: Au Fond du Terrier", listOf(
+                        "Alice commençait à se fatiguer d'être assise à côté de sa sœur au bord de l'eau, quand un Lapin Blanc aux yeux roses passa près d'elle.",
+                        "Le Lapin tira une montre de son gilet, et Alice courut à sa suite avant de sauter dans un grand terrier sous la haie sans hésiter."
+                    )),
+                    Chapter(2, "Chapitre II: Un Thé chez les Fous", listOf(
+                        "Une table était dressée sous un arbre, où le Lièvre de Mars et le Chapelier prenaient le thé. Un Loir dormait entre eux.",
+                        "« Pas de place ! », crièrent-ils quand ils virent venir Alice. « Il y a de la place de reste ! », dit Alice indignée en s'asseyant."
+                    ))
+                )
+            )
+            else -> book
+        }
+    }
+
+    private fun translateToPortuguese(book: Book): Book {
+        return when (book.id) {
+            "el_principito" -> book.copy(
+                title = "O Pequeno Príncipe",
+                category = "Fantasia Filosófica",
+                synopsis = "Um piloto perdido no deserto do Saara encontra um pequeno príncipe vindo de outro planeta. Eles conversam sobre o amor, a amizade e o mundo.",
+                chapters = listOf(
+                    Chapter(1, "Capítulo I: O Encontro no Deserto", listOf(
+                        "Vivi assim, só, sem ninguém com quem falar de verdade, até que tive uma pane no deserto do Saara, há seis anos. Algo se quebrara no motor.",
+                        "Na primeira noite dormi sobre a areia. Fui acordado ao amanhecer por uma estranha vozinha que dizia: 'Por favor... desenha-me um carneiro!'"
+                    )),
+                    Chapter(2, "Capítulo II: A Flor Misteriosa", listOf(
+                        "Aprendi a conhecer melhor essa flor no planeta do pequeno príncipe. Era simples, com uma só fileira de pétalas, sem incomodar ninguém.",
+                        "But aquela flor havia germinado de uma semente trazida sutilmente, e o pequeno príncipe vigiara de perto aquele raminho."
+                    )),
+                    Chapter(3, "Capítulo III: O Segredo da Vida", listOf(
+                        "Foi então que apareceu a raposa. 'Bom dia', disse a raposa sob a macieira. 'Quem é você?' perguntou o pequeno príncipe.",
+                        "E depois ela acrescentou o segredo: 'Eis o meu segredo. É muito simples: só se vê bem com o coração; o essencial é invisível aos olhos.'"
+                    ))
+                )
+            )
+            "don_quijote" -> book.copy(
+                title = "Dom Quixote",
+                category = "Literatura Clássica",
+                synopsis = "Alonso Quijano perde o juízo de tanto ler romances de cavalaria e decide tornar-se o cavaleiro andante Dom Quixote.",
+                chapters = listOf(
+                    Chapter(1, "Capítulo I: O Famoso Fidalgo", listOf(
+                        "Num lugar da Mancha vivia um fidalgo dos de lança em cabido, adaga antiga, rocinante magro e galgo corredor.",
+                        "Este fidalgo dava em ler livros de cavalaria com tanta afeição que esqueceu quase de todo o exercício da caça ou seus bens."
+                    )),
+                    Chapter(2, "Capítulo II: A Aventura dos Moinhos de Vento", listOf(
+                        "Nisto, descobriram trinta ou quarenta moinhos de vento. Dom Quixote disse ao seu escudeiro: 'Vês ali, amigo Sancho, trinta descomunais gigantes?'",
+                        "«Que gigantes?», disse Sancho Pança. «Aqueles são moinhos de vento, e o que parecem braços são as pás movidas pelo vento!»"
+                    ))
+                )
+            )
+            "la_metamorfosis" -> book.copy(
+                title = "A Metamorfose",
+                category = "Existencialismo",
+                synopsis = "Gregor Samsa acorda transformado em um inseto monstruoso, causando um grande impacto devastador em sua família.",
+                chapters = listOf(
+                    Chapter(1, "Capítulo I: O Despertar", listOf(
+                        "Quando Gregor Samsa acordou certa manhã de sonhos intranquilos, encontrou-se metamorfoseado num inseto monstruoso.",
+                        "Seu quarto permanecia calmo entre as quatro paredes bem conhecidas. «O que aconteceu comigo?», pensou ele."
+                    )),
+                    Chapter(2, "Capítulo II: A Reação da Família", listOf(
+                        "A porta só se abriu à noite. Gregor compreendeu que sua família não queria deixá-lo sozinho, mas ninguém tinha coragem de entrar.",
+                        "Sua irmã Grete entrou com leite doce e pedaços de pão. Gregor descobriu que preferia cascas de legumes do que comida fresca."
+                    ))
+                )
+            )
+            "dracula" -> book.copy(
+                title = "Drácula",
+                category = "Terror Gótico",
+                synopsis = "Jonathan Harker viaja ao castelo do Conde Drácula na Transilvânia e descobre que está preso sob um terror sombrio.",
+                chapters = listOf(
+                    Chapter(1, "Capítulo I: A Viagem para a Transilvânia", listOf(
+                        "Minha viagem começou em Munique, e cheguei ao desfiladeiro de Borgo no anoitecer. As montanhas erguiam-se como gigantes encapuzados.",
+                        "Uma carruagem negra apareceu de repente. O cocheiro, coberto por uma grande capa preta, acenou para que eu subisse."
+                    )),
+                    Chapter(2, "Capítulo II: O Encontro com o Conde", listOf(
+                        "A carruagem parou no pátio de um castelo em ruínas. Um ancião alto, de longo bigode branco e vestido de preto, avançou.",
+                        "«Bem-vindo à minha casa», disse com voz profunda. «Entre livremente, senhor Harker.» Suas mãos estavam extremamente frias."
+                    ))
+                )
+            )
+            "alicia_maravillas" -> book.copy(
+                title = "Alice no País das Maravilhas",
+                category = "Fantasia Absurda",
+                synopsis = "Alice persegue um Coelho Branco vestindo colete e mergulha no assombroso País das Maravilhas.",
+                chapters = listOf(
+                    Chapter(1, "Capítulo I: Descendo pela Toca", listOf(
+                        "Alice começava a estar cansada de estar sentada com sua irmã na beira do rio, quando um Coelho Branco de olhos cor-de-rosa passou correndo.",
+                        "O coelho tirou um relógio do colete, e Alice correu atrás dele pelo campo, saltando dentro de uma grande toca de coelho sem hesitar."
+                    )),
+                    Chapter(2, "Capítulo II: O Chá de Loucos", listOf(
+                        "Havia uma mesa posta debaixo de uma árvore, onde a Lebre de Março e o Chapeleiro estavam tomando chá com um Leirão no meio.",
+                        "«Não há lugar!», gritaram quando viram Alice. «Há muitíssimo lugar!», disse Alice indignada, sentando-se num grande cadeirão."
+                    ))
+                )
+            )
+            else -> book
+        }
+    }
 }
